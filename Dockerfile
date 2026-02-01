@@ -41,6 +41,12 @@ WORKDIR /app
 # Copy the published application
 COPY --from=backend-build /app/publish .
 
+# Create data directory for SQLite database
+RUN mkdir -p /app/data && chmod 755 /app/data
+
+# Define volume for database persistence
+VOLUME ["/app/data"]
+
 # Expose the port the app runs on
 EXPOSE 8080
 
