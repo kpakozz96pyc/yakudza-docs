@@ -1,0 +1,6 @@
+@yakudza_docs_HostAddress = http://localhost:5115
+
+GET {{yakudza_docs_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
