@@ -40,10 +40,19 @@ var distPath = Path.Combine(app.Environment.ContentRootPath, "client", "dist");
 var distProvider = new PhysicalFileProvider(distPath);
 
 // отдаём статику React build
-app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    FileProvider = distProvider
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = distProvider
+});
 
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    FileProvider = distProvider
+});
 
 app.Run();
 

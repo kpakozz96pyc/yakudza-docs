@@ -41,3 +41,4 @@
 /home/kpakozz96pyc/RiderProjects/yakudza-docs/yakudza-docs/obj/Debug/net10.0/yakudza-docs.pdb
 /home/kpakozz96pyc/RiderProjects/yakudza-docs/yakudza-docs/obj/Debug/net10.0/yakudza-docs.genruntimeconfig.cache
 /home/kpakozz96pyc/RiderProjects/yakudza-docs/yakudza-docs/obj/Debug/net10.0/ref/yakudza-docs.dll
+/home/kpakozz96pyc/RiderProjects/yakudza-docs/yakudza-docs/obj/Debug/net10.0/yakudza-docs.sourcelink.json
