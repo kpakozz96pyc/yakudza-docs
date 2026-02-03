@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using yakudza_docs.Data;
@@ -131,6 +132,7 @@ public class DishesController : ControllerBase
     /// <summary>
     /// Create a new dish
     /// </summary>
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<DishDetailsDto>> CreateDish([FromBody] CreateDishDto dto)
     {
@@ -192,6 +194,7 @@ public class DishesController : ControllerBase
     /// <summary>
     /// Update an existing dish
     /// </summary>
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<ActionResult<DishDetailsDto>> UpdateDish(int id, [FromBody] UpdateDishDto dto)
     {
@@ -266,6 +269,7 @@ public class DishesController : ControllerBase
     /// <summary>
     /// Delete a dish
     /// </summary>
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteDish(int id)
     {

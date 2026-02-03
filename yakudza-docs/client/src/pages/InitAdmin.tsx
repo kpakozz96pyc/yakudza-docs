@@ -1,14 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { authApi } from '../services/api';
 
 export default function InitAdmin() {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    checkAdminExists();
+  }, []);
+
+  const checkAdminExists = async () => {
+    try {
+      const adminExists = await authApi.checkAdminExists();
+      if (adminExists) {
+        // Admin already exists, redirect to login
+        navigate('/login');
+      }
+    } catch (err) {
+      console.error('Error checking admin:', err);
+    } finally {
+      setCheckingAdmin(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -22,14 +45,30 @@ export default function InitAdmin() {
       return;
     }
 
-    // TODO: Implement actual admin creation when backend is ready
-    // For now, check if admins exist in DB
-    console.log('Creating admin:', { login, password });
+    setLoading(true);
 
-    // Simulate successful creation
-    alert('Admin account created successfully!');
-    navigate('/login');
+    try {
+      const response = await authApi.initAdmin({ login, password });
+      authLogin({
+        login: response.login,
+        role: response.role,
+        token: response.token,
+      });
+      navigate('/feed');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create admin account');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (checkingAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <p className="text-gray-400">Checking admin status...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
@@ -100,9 +139,10 @@ export default function InitAdmin() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Admin Account
+              {loading ? 'Creating...' : 'Create Admin Account'}
             </button>
           </div>
 

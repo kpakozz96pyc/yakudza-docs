@@ -8,21 +8,128 @@ Base URL: `http://localhost:8080/api`
 
 ## Authentication
 
-Currently, the API does not require authentication. Authentication and authorization will be added in future versions.
+The API uses JWT (JSON Web Token) bearer authentication for protected endpoints.
+
+**Protected Endpoints:**
+- POST `/api/dishes` - Create dish
+- PUT `/api/dishes/{id}` - Update dish
+- DELETE `/api/dishes/{id}` - Delete dish
+
+**Public Endpoints:**
+- GET `/api/dishes` - Get all dishes
+- GET `/api/dishes/{id}` - Get dish details
+- GET `/api/dishes/{id}/image` - Get dish image
+- POST `/api/auth/login` - Login
+- POST `/api/auth/init-admin` - Initialize first admin
+- GET `/api/auth/check-admin` - Check if admin exists
 
 ## Database Initialization
 
 The application automatically initializes the database with seed data on first startup:
 
 ### Default Users
-- **Admin**: login: `admin`, password: `password`
 - **User**: login: `user`, password: `password`
+- **Admin**: Use `/api/auth/init-admin` to create the first admin account
 
 ### Sample Dishes
 - Борщ (Ukrainian Borscht)
 - Оливье (Olivier Salad)
 
-## Endpoints
+## Authentication Endpoints
+
+### 1. Login
+
+**POST** `/api/auth/login`
+
+Authenticate a user and receive a JWT token.
+
+**Request Body:**
+```json
+{
+  "login": "user",
+  "password": "password"
+}
+```
+
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "login": "user",
+  "role": "User"
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid login or password
+
+---
+
+### 2. Initialize Admin
+
+**POST** `/api/auth/init-admin`
+
+Create the first admin account. Only works if no admin exists.
+
+**Request Body:**
+```json
+{
+  "login": "admin",
+  "password": "SecurePassword123"
+}
+```
+
+**Validation Rules:**
+- `login` - Required, 1-100 characters
+- `password` - Required, minimum 6 characters
+
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "login": "admin",
+  "role": "Admin"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - Admin already exists or validation errors
+
+---
+
+### 3. Check Admin Exists
+
+**GET** `/api/auth/check-admin`
+
+Check if an admin user exists in the system.
+
+**Response:**
+```json
+true
+```
+
+---
+
+## Using Authentication
+
+To access protected endpoints, include the JWT token in the Authorization header:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+Example using curl:
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"name":"New Dish","description":"...","ingredients":[...]}' \
+     http://localhost:8080/api/dishes
+```
+
+---
+
+## Dish Endpoints
 
 ### 1. Get All Dishes (with Pagination and Search)
 
@@ -111,6 +218,8 @@ Returns the dish image as binary data (JPEG format).
 
 **POST** `/api/dishes`
 
+**🔒 Requires Authentication**
+
 Creates a new dish with ingredients.
 
 **Request Body:**
@@ -154,6 +263,8 @@ Creates a new dish with ingredients.
 
 **PUT** `/api/dishes/{id}`
 
+**🔒 Requires Authentication**
+
 Updates an existing dish. Replaces all ingredients with the new list.
 
 **Request Body:**
@@ -196,6 +307,8 @@ Updates an existing dish. Replaces all ingredients with the new list.
 ### 6. Delete Dish
 
 **DELETE** `/api/dishes/{id}`
+
+**🔒 Requires Authentication**
 
 Deletes a dish and all its ingredients (cascade delete).
 
@@ -256,11 +369,22 @@ dotnet run
 - **Production (Docker)**: `/app/data/yakudza.db`
 - **Development**: `./yakudza.db`
 
+## Recent Changes
+
+### Version 2.0 - Authentication & Authorization
+
+- ✅ JWT-based authentication
+- ✅ Login endpoint
+- ✅ Init admin functionality (create first admin account)
+- ✅ Protected endpoints for create/update/delete operations
+- ✅ Role-based authorization (Admin/User roles)
+- ✅ Frontend authentication with React context
+- ✅ Protected routes in frontend
+
 ## Future Enhancements
 
-- User authentication and authorization
-- JWT-based API security
-- Role-based access control (Admin-only endpoints)
 - Advanced filtering and sorting
 - Batch operations
 - Image optimization and thumbnails
+- User management endpoints (for admins)
+- Password reset functionality

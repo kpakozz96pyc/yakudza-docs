@@ -11,7 +11,10 @@ RUN npm ci
 # Copy client source code
 COPY yakudza-docs/client/ ./
 
-# Build the frontend
+# Build the frontend with environment variable
+# In production, frontend uses relative URLs (/api) since it's served by the same backend
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # Stage 2: Build the backend

@@ -5,9 +5,38 @@ import type {
   CreateDishRequest,
   UpdateDishRequest,
 } from '../types/api';
+import type { LoginRequest, LoginResponse, InitAdminRequest } from '../types/auth';
 
-// Use relative URL in development (proxied by Vite) or absolute URL in production
-const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api';
+// Use relative URL in development (proxied by Vite) or configured URL in production
+const API_BASE_URL = import.meta.env.DEV
+  ? '/api'
+  : (import.meta.env.VITE_API_BASE_URL || '/api');
+
+// Get auth token from localStorage
+function getAuthToken(): string | null {
+  const authUser = localStorage.getItem('yakudza_auth_user');
+  if (!authUser) return null;
+  try {
+    const parsed = JSON.parse(authUser);
+    return parsed.token;
+  } catch {
+    return null;
+  }
+}
+
+// Add Authorization header if token exists
+function getHeaders(): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
 
 class ApiError extends Error {
   status: number;
@@ -54,9 +83,7 @@ export const dishesApi = {
   async create(dish: CreateDishRequest): Promise<DishDetails> {
     const response = await fetch(`${API_BASE_URL}/dishes`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getHeaders(),
       body: JSON.stringify(dish),
     });
     return handleResponse<DishDetails>(response);
@@ -65,9 +92,7 @@ export const dishesApi = {
   async update(id: number, dish: UpdateDishRequest): Promise<DishDetails> {
     const response = await fetch(`${API_BASE_URL}/dishes/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getHeaders(),
       body: JSON.stringify(dish),
     });
     return handleResponse<DishDetails>(response);
@@ -76,6 +101,7 @@ export const dishesApi = {
   async delete(id: number): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/dishes/${id}`, {
       method: 'DELETE',
+      headers: getHeaders(),
     });
 
     if (!response.ok) {
@@ -86,5 +112,34 @@ export const dishesApi = {
 
   getImageUrl(id: number): string {
     return `${API_BASE_URL}/dishes/${id}/image`;
+  },
+};
+
+export const authApi = {
+  async login(credentials: LoginRequest): Promise<LoginResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+    return handleResponse<LoginResponse>(response);
+  },
+
+  async initAdmin(data: InitAdminRequest): Promise<LoginResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/init-admin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<LoginResponse>(response);
+  },
+
+  async checkAdminExists(): Promise<boolean> {
+    const response = await fetch(`${API_BASE_URL}/auth/check-admin`);
+    return handleResponse<boolean>(response);
   },
 };
