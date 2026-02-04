@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { dishesApi } from '../services/api';
-import type { Ingredient } from '../types/api';
+import type { Ingredient, DishDetails } from '../types/api';
 
 export default function Dish() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const isNewDish = id === 'new';
+
+  // Show/Edit state - new dishes start in edit mode, existing dishes start in show mode
+  const [isEditing, setIsEditing] = useState(isNewDish);
+  const [dishDetails, setDishDetails] = useState<DishDetails | null>(null);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -30,6 +36,7 @@ export default function Dish() {
       setLoading(true);
       setError('');
       const dish = await dishesApi.getById(dishId);
+      setDishDetails(dish);
       setName(dish.name);
       setDescription(dish.description);
       setIngredients(dish.ingredients.length > 0 ? dish.ingredients : [{ name: '', weightGrams: 0 }]);
@@ -41,6 +48,29 @@ export default function Dish() {
       console.error('Error loading dish:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (isNewDish) {
+      navigate('/feed');
+    } else {
+      // Reset form to original values
+      if (dishDetails) {
+        setName(dishDetails.name);
+        setDescription(dishDetails.description);
+        setIngredients(dishDetails.ingredients.length > 0 ? dishDetails.ingredients : [{ name: '', weightGrams: 0 }]);
+        if (dishDetails.hasImage) {
+          setImagePreview(dishesApi.getImageUrl(dishDetails.id));
+        }
+      }
+      setImageFile(null);
+      setError('');
+      setIsEditing(false);
     }
   };
 
@@ -101,11 +131,13 @@ export default function Dish() {
 
       if (isNewDish) {
         await dishesApi.create(dishData);
+        navigate('/feed');
       } else {
-        await dishesApi.update(parseInt(id!), dishData);
+        const updatedDish = await dishesApi.update(parseInt(id!), dishData);
+        setDishDetails(updatedDish);
+        setIsEditing(false);
+        setImageFile(null);
       }
-
-      navigate('/feed');
     } catch (err) {
       setError('Failed to save dish');
       console.error('Error saving dish:', err);
@@ -134,6 +166,79 @@ export default function Dish() {
     );
   }
 
+  // Show state - compact view with all dish information
+  if (!isEditing && dishDetails) {
+    return (
+      <div className="min-h-screen bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-white">{dishDetails.name}</h1>
+            <div className="flex gap-3">
+              {isAuthenticated && (
+                <button
+                  onClick={handleEdit}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                >
+                  Edit
+                </button>
+              )}
+              <button
+                onClick={() => navigate('/feed')}
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Back to Feed
+              </button>
+            </div>
+          </div>
+
+          {/* Dish Content */}
+          <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+            {/* Image */}
+            {dishDetails.hasImage && (
+              <img
+                src={dishesApi.getImageUrl(dishDetails.id)}
+                alt={dishDetails.name}
+                className="w-full h-96 object-cover"
+              />
+            )}
+            {!dishDetails.hasImage && (
+              <div className="w-full h-96 bg-gray-700 flex items-center justify-center">
+                <span className="text-gray-500 text-6xl">🍽️</span>
+              </div>
+            )}
+
+            {/* Details */}
+            <div className="p-6">
+              <div className="mb-6">
+                <h2 className="text-sm font-medium text-gray-400 mb-2">Description</h2>
+                <p className="text-white text-lg">{dishDetails.description}</p>
+              </div>
+
+              {/* Ingredients */}
+              {dishDetails.ingredients.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-medium text-gray-400 mb-3">Ingredients</h2>
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <ul className="space-y-2">
+                      {dishDetails.ingredients.map((ingredient, index) => (
+                        <li key={index} className="flex justify-between items-center text-white">
+                          <span>{ingredient.name}</span>
+                          <span className="text-gray-400">{ingredient.weightGrams}g</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Edit state - full form
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -284,7 +389,7 @@ export default function Dish() {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/feed')}
+                onClick={handleCancelEdit}
                 className="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Cancel

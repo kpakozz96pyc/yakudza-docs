@@ -15,7 +15,7 @@ using yakudza_docs.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure database path
-var dataPath = Path.Combine("/app", "data");
+var dataPath = Path.Combine(builder.Environment.ContentRootPath, "data");
 Directory.CreateDirectory(dataPath);
 var dbPath = Path.Combine(dataPath, "yakudza.db");
 

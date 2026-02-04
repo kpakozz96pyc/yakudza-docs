@@ -38,15 +38,28 @@ public class DishesController : ControllerBase
             return BadRequest("Page size must be between 1 and 100");
         }
 
-        var query = _context.DishTechCards.AsQueryable();
+        IQueryable<DishTechCard> query = _context.DishTechCards;
 
         // Apply search filter
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var searchLower = search.ToLower();
+            // For Cyrillic support, use client-side evaluation with proper culture
+            var searchLower = search.ToLower(System.Globalization.CultureInfo.InvariantCulture);
+
+            // Get all ingredients and filter client-side (handles Cyrillic properly)
+            var allIngredients = await _context.DishIngredients.ToListAsync();
+            var dishIdsWithMatchingIngredients = allIngredients
+                .Where(i => i.Name.ToLower(System.Globalization.CultureInfo.InvariantCulture).Contains(searchLower))
+                .Select(i => i.DishTechCardId)
+                .Distinct()
+                .ToList();
+
+            // For dish name/description, use server-side search (works for most Cyrillic)
+            // Combined with client-side ingredient search results
             query = query.Where(d =>
                 d.Name.ToLower().Contains(searchLower) ||
-                d.Description.ToLower().Contains(searchLower));
+                d.Description.ToLower().Contains(searchLower) ||
+                dishIdsWithMatchingIngredients.Contains(d.Id));
         }
 
         var totalCount = await query.CountAsync();

@@ -6,6 +6,7 @@ import type { DishListItem } from '../types/api';
 
 export default function Feed() {
   const [dishes, setDishes] = useState<DishListItem[]>([]);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -13,6 +14,16 @@ export default function Feed() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     loadDishes();
@@ -31,12 +42,6 @@ export default function Feed() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    loadDishes();
   };
 
   return (
@@ -79,23 +84,15 @@ export default function Feed() {
         </div>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Search dishes..."
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search dishes by name, description, or ingredients..."
+            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
 
         {/* Error Message */}
         {error && (
